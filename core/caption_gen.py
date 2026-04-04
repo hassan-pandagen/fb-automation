@@ -67,7 +67,13 @@ def generate_caption(title: str, summary: str, niche: str) -> str:
 News headline: {title}
 Summary: {summary[:300] if summary else 'No summary available.'}
 
-Write ONLY the caption text. No preamble, no quotes around it."""
+FORMATTING RULES:
+- Write ONLY the caption text. No preamble, no quotes around it.
+- Use short paragraphs (2-3 sentences max per paragraph).
+- Add a blank line between each paragraph for readability.
+- Put the hook on its own line at the top.
+- Put hashtags on their own line at the bottom.
+- Make it easy to read on a phone screen."""
 
     # Try Groq first (free, no region block)
     if os.getenv("GROQ_API_KEY"):
