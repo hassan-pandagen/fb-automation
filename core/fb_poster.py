@@ -31,8 +31,10 @@ class FacebookPoster:
 
     def post_photo(self, image_path: str, caption: str) -> Optional[str]:
         """
-        Posts an image with caption to the page.
-        Returns Facebook post ID on success, None on failure.
+        Posts an image with caption as a FEED POST (not just photo album).
+        Step 1: Upload image as unpublished photo
+        Step 2: Create feed post with the photo attached
+        This ensures the post appears in the main feed and qualifies for monetization.
         """
         path = Path(image_path)
         if not path.exists():
@@ -40,26 +42,43 @@ class FacebookPoster:
             return None
 
         try:
+            # Step 1: Upload photo as unpublished
             with open(path, "rb") as img_file:
-                response = requests.post(
+                upload_response = requests.post(
                     self._url(f"{self.page_id}/photos"),
                     data={
-                        "caption":       caption,
                         "access_token":  self.token,
-                        "published":     "true",
+                        "published":     "false",
                     },
                     files={"source": (path.name, img_file, "image/jpeg")},
                     timeout=30,
                 )
 
-            data = response.json()
+            upload_data = upload_response.json()
+            if "id" not in upload_data:
+                logger.error(f"Photo upload failed: {upload_data}")
+                return None
 
-            if "id" in data:
-                post_id = data["id"]
-                logger.info(f"Posted photo to page {self.page_id}: post_id={post_id}")
+            photo_id = upload_data["id"]
+
+            # Step 2: Create feed post with photo attached
+            feed_response = requests.post(
+                self._url(f"{self.page_id}/feed"),
+                data={
+                    "message":        caption,
+                    "access_token":   self.token,
+                    "attached_media[0]": f'{{"media_fbid":"{photo_id}"}}',
+                },
+                timeout=15,
+            )
+
+            feed_data = feed_response.json()
+            if "id" in feed_data:
+                post_id = feed_data["id"]
+                logger.info(f"Feed post with photo on page {self.page_id}: post_id={post_id}")
                 return post_id
             else:
-                logger.error(f"Facebook post failed: {data}")
+                logger.error(f"Feed post failed: {feed_data}")
                 return None
 
         except Exception as e:
