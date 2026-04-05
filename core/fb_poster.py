@@ -16,7 +16,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-GRAPH_URL = "https://graph.facebook.com/v19.0"
+GRAPH_URL = "https://graph.facebook.com/v25.0"
 
 
 class FacebookPoster:
@@ -31,10 +31,13 @@ class FacebookPoster:
 
     def post_photo(self, image_path: str, caption: str) -> Optional[str]:
         """
-        Posts an image with caption as a FEED POST (not just photo album).
-        Step 1: Upload image as unpublished photo
-        Step 2: Create feed post with the photo attached
-        This ensures the post appears in the main feed and qualifies for monetization.
+        Posts a photo as a FEED POST on the page timeline.
+
+        Key API details (Graph API v25.0):
+        - 'caption' is the correct field ('message' is DEPRECATED on /photos)
+        - 'no_story' must be false (default) so the photo creates a feed story
+        - 'published' = true posts immediately
+        - Response includes 'post_id' when a feed story is created
         """
         path = Path(image_path)
         if not path.exists():
@@ -42,43 +45,33 @@ class FacebookPoster:
             return None
 
         try:
-            # Step 1: Upload photo as unpublished
             with open(path, "rb") as img_file:
-                upload_response = requests.post(
+                response = requests.post(
                     self._url(f"{self.page_id}/photos"),
                     data={
+                        "message":       caption,
                         "access_token":  self.token,
-                        "published":     "false",
+                        "published":     "true",
                     },
                     files={"source": (path.name, img_file, "image/jpeg")},
                     timeout=30,
                 )
 
-            upload_data = upload_response.json()
-            if "id" not in upload_data:
-                logger.error(f"Photo upload failed: {upload_data}")
-                return None
+            data = response.json()
 
-            photo_id = upload_data["id"]
-
-            # Step 2: Create feed post with photo attached
-            feed_response = requests.post(
-                self._url(f"{self.page_id}/feed"),
-                data={
-                    "message":        caption,
-                    "access_token":   self.token,
-                    "attached_media[0]": f'{{"media_fbid":"{photo_id}"}}',
-                },
-                timeout=15,
-            )
-
-            feed_data = feed_response.json()
-            if "id" in feed_data:
-                post_id = feed_data["id"]
-                logger.info(f"Feed post with photo on page {self.page_id}: post_id={post_id}")
+            if "post_id" in data:
+                post_id = data["post_id"]
+                logger.info(f"Feed post created on page {self.page_id}: post_id={post_id}")
                 return post_id
+            elif "id" in data:
+                photo_id = data["id"]
+                logger.warning(
+                    f"Photo uploaded to page {self.page_id} but NO post_id returned "
+                    f"(photo may be album-only, not in feed). photo_id={photo_id}"
+                )
+                return photo_id
             else:
-                logger.error(f"Feed post failed: {feed_data}")
+                logger.error(f"Facebook post failed: {data}")
                 return None
 
         except Exception as e:
@@ -107,7 +100,7 @@ class FacebookPoster:
             return None
 
     def post_photo_from_url(self, image_url: str, caption: str) -> Optional[str]:
-        """Posts a photo by URL (useful for Canva export URLs)."""
+        """Posts a photo by URL as a feed post (useful for Canva export URLs)."""
         try:
             response = requests.post(
                 self._url(f"{self.page_id}/photos"),
@@ -116,12 +109,16 @@ class FacebookPoster:
                     "caption":      caption,
                     "access_token": self.token,
                     "published":    "true",
+                    "no_story":     "false",
                 },
                 timeout=20,
             )
             data = response.json()
-            if "id" in data:
-                logger.info(f"URL photo posted: {data['id']}")
+            if "post_id" in data:
+                logger.info(f"URL photo feed post: {data['post_id']}")
+                return data["post_id"]
+            elif "id" in data:
+                logger.warning(f"URL photo posted but may be album-only (no post_id): {data['id']}")
                 return data["id"]
             logger.error(f"URL photo post failed: {data}")
             return None

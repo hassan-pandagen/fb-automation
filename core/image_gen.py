@@ -61,12 +61,21 @@ NICHE_STYLES = {
         "image_mode": "local_folder",
         "folder": "uploads/taichi",
     },
+    "drama": {
+        "bg": (25, 10, 10),
+        "accent": (200, 30, 80),
+        "text": (255, 255, 255),
+        "label": "DRAMA ALERT",
+        "watermark": "Follow @GrabYourPopcorn for the tea 🍿",
+        "image_mode": "news_search_real",
+        "search_queries": ["celebrity drama", "celebrity beef", "viral moment", "pop culture news"],
+    },
     "weird": {
         "bg": (30, 20, 50),
         "accent": (220, 150, 30),
         "text": (255, 255, 255),
-        "label": "WEIRD NEWS",
-        "watermark": "Follow for the weirdest stories",
+        "label": "NO WAY",
+        "watermark": "Follow @NoWayThatsReal for the wildest stories 🤯",
         "image_mode": "news_search",
         "search_queries": ["weird news", "bizarre", "strange news", "funny news"],
     },
@@ -552,18 +561,23 @@ def create_image_card(title: str, niche: str, image_url: str = "", source_url: s
     img = None
 
     if image_mode == "local_folder":
-        # Pick a random image from the upload folder
+        # Pick the oldest image from the upload folder (FIFO — post in order)
         folder = Path(style.get("folder", "uploads/taichi"))
         photos = list(folder.glob("*.jpg")) + list(folder.glob("*.jpeg")) + list(folder.glob("*.png")) + list(folder.glob("*.webp"))
         if photos:
-            picked = random.choice(photos)
+            picked = sorted(photos, key=lambda f: f.stat().st_mtime)[0]  # oldest first
             img = Image.open(str(picked)).convert("RGB")
             logger.info(f"[{niche}] Using local photo: {picked.name}")
-            # For tai chi — post the photo as-is (no overlay, it's your influencer)
-            # Just resize to Facebook optimal size
+            # Post the photo as-is (no overlay, it's your influencer)
             img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
             filename = IMAGES_DIR / f"{niche}_{uuid.uuid4().hex[:8]}.jpg"
             img.save(str(filename), "JPEG", quality=95)
+            # Move to posted folder so it's not reused
+            posted_dir = folder / "posted"
+            posted_dir.mkdir(exist_ok=True)
+            import shutil
+            shutil.move(str(picked), str(posted_dir / picked.name))
+            logger.info(f"[{niche}] Moved {picked.name} to posted/")
             return {"local_path": str(filename), "canva_url": ""}
         else:
             logger.warning(f"[{niche}] No photos in {folder} — falling back to text card")

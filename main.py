@@ -122,6 +122,15 @@ def job_post_dance_reel():
             logger.error(f"[dance] Reel post error: {e}")
 
 
+def job_refresh_tokens():
+    """Auto-refresh Facebook tokens before they expire (runs weekly, refreshes at 50+ days old)."""
+    from utils.token_manager import check_and_refresh_all
+    try:
+        check_and_refresh_all()
+    except Exception as e:
+        logger.error(f"JOB token refresh error: {e}")
+
+
 def job_cleanup_images():
     """Deletes generated images older than 7 days to save disk space."""
     import time
@@ -148,6 +157,9 @@ def start_scheduler():
                                                         hour=7, minute=0), id="followers",   replace_existing=True)
     # Dance reel — 1 per day at 6 PM EST (22:00 UTC)
     scheduler.add_job(job_post_dance_reel,  CronTrigger(hour=22, minute=0), id="dance_reel", replace_existing=True)
+    # Token refresh — every Sunday, auto-refresh tokens expiring within 10 days
+    scheduler.add_job(job_refresh_tokens,   CronTrigger(day_of_week="sun",
+                                                        hour=5, minute=0), id="token_refresh", replace_existing=True)
     # Cleanup old images — daily at 3 AM UTC
     scheduler.add_job(job_cleanup_images,   CronTrigger(hour=3, minute=0),  id="cleanup",   replace_existing=True)
     scheduler.start()

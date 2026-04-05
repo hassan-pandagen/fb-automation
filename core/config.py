@@ -110,7 +110,8 @@ NICHE_CONFIGS: dict[str, NicheConfig] = {
         ],
         canva_template_id=os.getenv("CANVA_TEMPLATE_TAICHI", ""),
         post_slots=[
-            (7, 30), (10, 0), (13, 0), (17, 0), (20, 30)
+            (1, 0), (3, 30), (6, 0), (8, 30), (11, 0),
+            (13, 30), (16, 0), (18, 30), (21, 0), (23, 30)
         ],
         caption_style=(
             "Write a Facebook caption for a tai chi, martial arts, or Chinese culture post. "
@@ -122,6 +123,38 @@ NICHE_CONFIGS: dict[str, NicheConfig] = {
         ),
         keywords=["tai chi", "taichi", "kung fu", "martial arts", "qigong", "wushu",
                    "meditation", "chi", "balance", "training", "form", "stance", "practice"]
+    ),
+
+    "drama": NicheConfig(
+        name="drama",
+        rss_feeds=[
+            "https://www.tmz.com/rss.xml",
+            "https://pagesix.com/feed/",
+            "https://www.dailymail.co.uk/tvshowbiz/index.rss",
+            "https://www.reddit.com/r/entertainment/.rss",
+            "https://www.reddit.com/r/popculturechat/.rss",
+            "https://www.reddit.com/r/Fauxmoi/.rss",
+            "https://news.google.com/rss/search?q=celebrity+drama+OR+beef+OR+feud+OR+viral+moment&hl=en-US&gl=US&ceid=US:en",
+            "https://news.google.com/rss/search?q=Trump+OR+Kanye+OR+Drake+OR+celebrity+controversy&hl=en-US&gl=US&ceid=US:en",
+        ],
+        canva_template_id="",
+        post_slots=[
+            (10, 0), (20, 0)
+        ],
+        caption_style=(
+            "You are a pop culture and drama commentator on Facebook. Write an ORIGINAL caption that "
+            "tells the FULL STORY with all the juicy details — who said what, who clapped back, "
+            "the whole timeline of the beef or drama. "
+            "200-300 words. Start with a hook that makes people stop scrolling. "
+            "Tell the complete story like you're catching your friend up on the drama they missed. "
+            "Pick a side or give your hot take. React like a real person — 'NAH BECAUSE...' energy. "
+            "End with a spicy question that makes people comment and tag friends. "
+            "American English, Gen Z/millennial tone. Add 3-5 hashtags at the end."
+        ),
+        keywords=["drama", "beef", "feud", "clap back", "viral", "controversy",
+                   "celebrity", "Trump", "Kanye", "Drake", "Kardashian", "exposed",
+                   "cancelled", "responded", "fired back", "called out", "receipts",
+                   "tea", "shade", "diss", "fight", "breakup", "cheating", "scandal"]
     ),
 
     "weird": NicheConfig(
@@ -136,7 +169,7 @@ NICHE_CONFIGS: dict[str, NicheConfig] = {
         ],
         canva_template_id=os.getenv("CANVA_TEMPLATE_WEIRD", ""),
         post_slots=[
-            (8, 30), (11, 0), (13, 30), (16, 0), (19, 30), (21, 30)
+            (12, 0), (18, 0)
         ],
         caption_style=(
             "You are a comedy writer reacting to bizarre news on Facebook. Write an ORIGINAL caption "
